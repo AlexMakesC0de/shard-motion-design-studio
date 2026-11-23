@@ -1,6 +1,6 @@
 {
   "name": "motion-design-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Shard's MCP server for Claude Code and Codex. A separate package so the CLI stays zero-dependency.",
