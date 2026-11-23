@@ -30,6 +30,16 @@ const NO_TEXT = "No on-screen text of any kind, at any point: no captions, subti
 const NO_MUSIC = "No music, no score, no singing, no humming, no ambient pad, no swell, no drone, no laugh track, and no voices besides the scripted lines.";
 const ASKS_MUSIC = /\b(music|score|song|soundtrack|singing|melody|beat)\b/i;
 const KIND_WORD = { character: "character", product: "prop", location: "location", style: "style" };
+// What a Library reference gives the video, and nothing else: a sheet's flat
+// light, framing and backdrop otherwise leak in (Higgsfield's reference lines,
+// docs/research/2026-11-20-higgsfield-blog-lessons.md, lesson 2).
+const ROLE_WORDS = {
+  character: "Take only who they are from it, lit by this scene's light, never the sheet's flat studio light.",
+  product: "Take only this object's shape, colour and markings from it, sized and lit to fit the scene.",
+  location: "Take only the place, its materials and its light from it, filmed from this scene's own camera positions.",
+  style: "Take only the look from it: colour, texture and finish, none of its people, objects or framing.",
+};
+const listWords = (xs) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
 
 /** Why a picture of `width`×`height` would be refused, or null. `limits` is a route's refLimits.image. */
 function sizeProblem(what, size, limits) {
@@ -77,9 +87,11 @@ export function compileScene(input, { film, library, refToken = DEFAULT_REF_TOKE
       const keep = r.keep ?? a.keep ?? a.description;
       // Sheets have nothing to measure against; the real height keeps two characters' sizes apart.
       const tall = a.kind === "character" && a.heightCm ? ` This person is ${heightWords(a.heightCm)} tall.` : "";
+      const role = ROLE_WORDS[a.kind] ? ` ${ROLE_WORDS[a.kind]}` : "";
       return {
+        kind: a.kind,
         send: { source: `${name}#${sheet.n}`, role: "identity" },
-        line: `${token(i)} — ${what}. Preserve ${keep}${/[.!?]$/.test(keep) ? "" : "."}${tall}`,
+        line: `${token(i)} — ${what}. Preserve ${keep}${/[.!?]$/.test(keep) ? "" : "."}${tall}${role}`,
       };
     }
     const rel = r.source.slice("file:".length);
@@ -215,8 +227,12 @@ export function compileScene(input, { film, library, refToken = DEFAULT_REF_TOKE
   const typed = render(c.audio);
   const speech = lines.length ? [...said, `These are the only words spoken.${ASKS_MUSIC.test(typed) ? "" : ` ${NO_MUSIC}`}`] : [];
   section("AUDIO", [typed, ...speech].filter(Boolean).join("\n"));
-  if (resolved.length) out.push("[MAINTAIN CONSISTENCY]", "Keep every person, product and place exactly as in their reference images in every stage.");
-  else if (out.at(-1) === "") out.pop();
+  if (resolved.length) {
+    // Each character once: one sheet otherwise comes back as twins or a crowd of clones.
+    const people = resolved.flatMap((r, i) => (r?.kind === "character" ? [token(i)] : []));
+    const once = people.length === 1 ? `${people[0]} appears as exactly one person; nobody else in the video looks like them.` : people.length > 1 ? `${listWords(people)} each appear as exactly one person; nobody else in the video looks like any of them.` : null;
+    out.push("[LOCKS]", "Keep every person, product and place exactly as in their reference images in every stage.", ...(once ? [once] : []));
+  } else if (out.at(-1) === "") out.pop();
 
   const unique = [...new Set(problems)];
   const ROLE = { clip: "voiceclip", card: "voicecard", file: "voice" };

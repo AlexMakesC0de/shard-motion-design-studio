@@ -237,7 +237,7 @@ export function libraryNames(scene) {
 // Cards and pasted prompts live here, not in scenes.mjs, because the page needs them too.
 export const emptyCards = () => ({ goal: "", scene: "", stages: [], style: "", audio: "" });
 
-const SECTION = /^\[(GOAL|REFERENCES|SCRIPT|SCENE|VISUAL STYLE|AUDIO|MAINTAIN CONSISTENCY|STAGE (\d+) \| (\d+)\s*[–-]\s*(\d+) SECONDS \| ([^\]]+))\]\s*$/i;
+const SECTION = /^\[(GOAL|REFERENCES|SCRIPT|SCENE|VISUAL STYLE|AUDIO|MAINTAIN CONSISTENCY|LOCKS|STAGE (\d+) \| (\d+)\s*[–-]\s*(\d+) SECONDS \| ([^\]]+))\]\s*$/i;
 
 /** A whole prompt in Dan's sections → cards, or null when the text has no sections. */
 export function parseDanPrompt(raw) {

@@ -1,6 +1,6 @@
 {
   "name": "motion-design-studio",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Shard's local studio web app. The server has no dependencies; the page is built with Vite.",
