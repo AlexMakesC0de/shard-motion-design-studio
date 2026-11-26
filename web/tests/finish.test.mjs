@@ -9,7 +9,8 @@ const { createApp } = await import("../server/app.mjs");
 const { RENDER_DIR } = await import("../../cli/lib/render.mjs");
 const { CORE_TOOLS } = await import("../server/api/finish.mjs");
 
-const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
+// Both binaries, as the server's own check needs: a partial install can leave just one.
+const hasFfmpeg = ["ffmpeg", "ffprobe"].every((bin) => spawnSync(bin, ["-version"]).status === 0);
 const hasRender = existsSync(join(RENDER_DIR, "node_modules", "remotion"));
 const FILM = join(RUNS, "finish-demo");
 mkdirSync(FILM, { recursive: true });
@@ -274,7 +275,7 @@ describe("POST /api/films/:slug/assemble", () => {
     await slowApp.tasks.idle();
   });
 
-  test("transition_s 0 (the form's default) means straight cuts; a negative one is refused in seconds", async () => {
+  test("transition_s 0 (the form's default) means straight cuts; a negative one is refused in seconds", { skip: !hasFfmpeg && "ffmpeg not installed" }, async () => {
     const zero = await post(port, "/api/films/finish-demo/assemble", { shots: ["a.mp4"], transition_s: 0 });
     assert.equal(zero.status, 200, zero.text);
     await app.tasks.idle();

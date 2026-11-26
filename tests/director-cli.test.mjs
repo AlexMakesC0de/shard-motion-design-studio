@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
 const tmp = realpathSync(mkdtempSync(join(tmpdir(), "kie-director-cli-")));
 const KIE = new URL("../cli/kie.mjs", import.meta.url).pathname;
 const env = { ...process.env, KIE_RUNS_DIR: join(tmp, "runs"), KIE_LIBRARY_DIR: join(tmp, "library"), KIE_LIMITS_FILE: join(tmp, "limits.json") };
@@ -146,7 +147,7 @@ describe("kie shots, film, review and cut", () => {
     assert.equal(r.stderr.match(/No usable route/g)?.length, 1);
   });
 
-  test("review and cut work on takes already filmed", async () => {
+  test("review and cut work on takes already filmed", { skip: !hasFfmpeg && "ffmpeg not installed" }, async () => {
     process.env.KIE_RUNS_DIR = env.KIE_RUNS_DIR;
     const { openJobs } = await import("../cli/core/jobs.mjs");
     const store = openJobs();
