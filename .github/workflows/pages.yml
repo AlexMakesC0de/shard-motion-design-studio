@@ -28,16 +28,16 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Assemble the site
         run: |
           mkdir -p _site/assets/brand _site/assets/looks
           cp site/index.html _site/
           cp web/public/brand/shard-icon.svg web/public/brand/shard-mark.svg _site/assets/brand/
           cp docs/images/looks/*.jpg _site/assets/looks/
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
