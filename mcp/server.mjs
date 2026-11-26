@@ -38,8 +38,7 @@ import { registerScenes } from "./scenes.mjs";
 import { registerSkills } from "./skills.mjs";
 import { registerExplore, EXPLORE_INSTRUCTIONS, EXPLORE_TOOLS } from "./explore.mjs";
 import { stoppable } from "./stop.mjs";
-
-const VERSION = "0.1.0";
+import { VERSION } from "./version.mjs";
 
 const INSTRUCTIONS =
   "Shard, a motion-design studio over kie.ai. Look first (status, list_models, list_presets, estimate), " +

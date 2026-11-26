@@ -6,6 +6,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "./server.mjs";
+import { VERSION } from "./version.mjs";
 
 /**
  * Connect a client to a fresh server. `deps` and `catalog` go to
@@ -15,7 +16,7 @@ import { createServer } from "./server.mjs";
  */
 export async function connectInProcess({ deps = {}, catalog, name = "motion-design-studio", mode = "full" } = {}) {
   const server = createServer(catalog ? { deps, catalog, mode } : { deps, mode });
-  const client = new Client({ name, version: "0.1.0" });
+  const client = new Client({ name, version: VERSION });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
   return {
