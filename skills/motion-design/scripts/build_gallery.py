@@ -12,6 +12,11 @@ START = '<!-- PRESET_DATA_START -->'
 END = '<!-- PRESET_DATA_END -->'
 
 
+def is_https(value):
+    url = urlparse(value) if isinstance(value, str) else None
+    return bool(url and url.scheme == 'https' and url.netloc)
+
+
 def build():
     catalog = json.loads((ROOT / 'assets/presets.json').read_text(encoding='utf-8'))
     presets = catalog['presets']
@@ -62,10 +67,14 @@ def build():
             raise ValueError(f'{preset_id}: archived original prompt hash mismatch')
         preset['source_prompt_text'] = source_bytes.decode('utf-8')
 
-        for field in ('url', 'preview_url'):
-            url = urlparse(preset['source'][field])
-            if url.scheme != 'https' or not url.netloc:
+        for field in ('url', 'preview_url', 'additional_preview_url'):
+            if field == 'additional_preview_url' and field not in preset['source']:
+                continue
+            if not is_https(preset['source'][field]):
                 raise ValueError(f'{preset_id}: invalid source {field}')
+
+    if not is_https(catalog.get('source_url', '')):
+        raise ValueError('The catalog source_url must be an https URL.')
 
     gallery = ROOT / 'assets/gallery.html'
     html = gallery.read_text(encoding='utf-8')

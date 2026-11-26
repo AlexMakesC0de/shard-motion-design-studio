@@ -94,8 +94,9 @@
     let rememberedDuration = null;
     let rememberedAudio = 'music';
     function node(tag,attrs={},text){const el=document.createElement(tag);for(const [key,value] of Object.entries(attrs)){if(key==='class')el.className=value;else el.setAttribute(key,value)}if(text!==undefined)el.textContent=text;return el}
+    function httpsUrl(value){try{const url=new URL(value);return url.protocol==='https:'?url.href:''}catch{return ''}}
     function fillList(id,values){document.getElementById(id).replaceChildren(...values.map(text=>node('li',{},text)))}
-    document.getElementById('source-link').href=catalog.source_url;
+    document.getElementById('source-link').href=httpsUrl(catalog.source_url);
     function pauseAll(except){document.querySelectorAll('video').forEach(v=>{if(v!==except)v.pause()})}
     document.addEventListener('play',event=>{if(event.target instanceof HTMLVideoElement)pauseAll(event.target)},true);
     document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseAll()});
@@ -107,8 +108,8 @@
       for(const p of shown){
         const card=node('article',{class:'card','data-preset':p.id});
         const media=node('div',{class:'media'});media.style.setProperty('--card-color',p.color);
-        const video=node('video',{controls:'',playsinline:'',preload:'metadata','aria-label':p.title+' source preview'});video.muted=true;video.src=p.source.preview_url;
-        const error=node('div',{class:'media-error',hidden:''});error.append(node('span',{},'Preview unavailable. You can still use this style.'),node('a',{href:p.source.url,target:'_blank',rel:'noopener noreferrer'},'View the source example'));
+        const video=node('video',{controls:'',playsinline:'',preload:'metadata','aria-label':p.title+' source preview'});video.muted=true;video.src=httpsUrl(p.source.preview_url);
+        const error=node('div',{class:'media-error',hidden:''});error.append(node('span',{},'Preview unavailable. You can still use this style.'),node('a',{href:httpsUrl(p.source.url),target:'_blank',rel:'noopener noreferrer'},'View the source example'));
         video.addEventListener('error',()=>{error.hidden=false});media.append(video,error);
         const copy=node('div',{class:'card-copy'});copy.append(node('h2',{},p.title),node('p',{},p.description));
         const choose=node('button',{class:'choose',type:'button','aria-label':'Use '+p.title},'Use this look');choose.addEventListener('click',()=>{opener=choose;openPreset(p.id)});copy.append(choose);card.append(media,copy);grid.append(card);
@@ -122,9 +123,9 @@
       document.getElementById('detail-title').textContent=p.title;
       document.getElementById('detail-tagline').textContent=p.tagline;
       document.getElementById('detail-description').textContent=p.best_for;
-      document.getElementById('detail-source').href=p.source.url;
-      const extra=document.getElementById('detail-extra');extra.hidden=!p.source.additional_preview_url;if(p.source.additional_preview_url)extra.href=p.source.additional_preview_url;else extra.removeAttribute('href');
-      detailVideo.src=p.source.preview_url;detailVideo.muted=true;
+      document.getElementById('detail-source').href=httpsUrl(p.source.url);
+      const extra=document.getElementById('detail-extra');const extraUrl=httpsUrl(p.source.additional_preview_url);extra.hidden=!extraUrl;if(extraUrl)extra.href=extraUrl;else extra.removeAttribute('href');
+      detailVideo.src=httpsUrl(p.source.preview_url);detailVideo.muted=true;
       fillList('detail-preserve',p.preserve);fillList('detail-required',p.required);
       document.getElementById('detail-structure').textContent=p.structure;
       document.getElementById('detail-template').textContent='ORIGINAL SOURCE PROMPT\n\n'+p.source_prompt_text+'\n\nADAPTATION GUIDE (separate from the original)\n\n'+p.template_text;
