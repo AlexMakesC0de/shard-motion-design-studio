@@ -74,7 +74,10 @@ export function registerScenes(tool, { catalog, ctx, deps = {} }) {
     "list_scenes",
     {
       title: "List scenes",
-      description: "A film's scenes with their cards, images and versions (job state, file, cost). Free.",
+      description:
+        "List a film's Seedance scenes and its idea: each scene card's fields and images, and every version with its job state, file and cost. " +
+        "Use it to see what exists before save_scene, get_scene_prompt, draft_scene or final_scene. " +
+        "For a shot-by-shot film use get_shots instead. A film with no scenes yet returns an empty list. Free; reads only.",
       inputSchema: { run },
       outputSchema: { idea: z.unknown(), scenes: z.array(Data) },
       annotations: LOOK,
