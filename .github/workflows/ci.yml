@@ -32,14 +32,23 @@ jobs:
           cache-dependency-path: |
             web/package-lock.json
             mcp/package-lock.json
-      # The finishing tests skip themselves without ffmpeg, so a slow package
-      # mirror only skips them instead of failing the run.
+      # The runner's Azure mirror can stall mid-download, so apt gives up on a
+      # stalled fetch and the last try uses the main Ubuntu mirror. The
+      # finishing tests still skip themselves if ffmpeg never arrives.
       - name: Install ffmpeg (for the finishing tests)
         timeout-minutes: 6
         continue-on-error: true
         run: |
           command -v ffmpeg && exit 0
-          sudo apt-get install -y -q --no-install-recommends ffmpeg || { sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg; }
+          apt="sudo apt-get -q -o Acquire::http::Timeout=20 -o Acquire::Retries=3"
+          for try in 1 2 3; do
+            if [ "$try" = 3 ]; then
+              sudo sed -i 's#azure\.archive\.ubuntu\.com#archive.ubuntu.com#g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            fi
+            $apt update && $apt install -y --no-install-recommends ffmpeg && exit 0
+            echo "ffmpeg install try $try failed"
+          done
+          exit 1
       - name: Install studio and MCP dependencies
         run: |
           npm --prefix web ci

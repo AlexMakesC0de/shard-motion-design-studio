@@ -1,10 +1,11 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
 const tmp = realpathSync(mkdtempSync(join(tmpdir(), "kie-cut-")));
 const RUNS = join(tmp, "runs");
 process.env.KIE_RUNS_DIR = RUNS;
@@ -104,7 +105,7 @@ describe("the cut plan", () => {
   });
 });
 
-describe("the editor pass", () => {
+describe("the editor pass", { skip: !hasFfmpeg && "ffmpeg not installed" }, () => {
   test("cuts real takes into film.mp4 at the film's size, records cut.json, and numbers a second cut", async () => {
     saveBrief("sea", brief);
     savePlan(catalog, "sea", plan());
@@ -126,7 +127,7 @@ describe("the editor pass", () => {
   });
 });
 
-describe("review", () => {
+describe("review", { skip: !hasFfmpeg && "ffmpeg not installed" }, () => {
   test("the contact sheet and frames of the take a shot uses", async () => {
     const r = await reviewShot("sea", "s1", { store });
     assert.equal(r.take, "s1-take.mp4");
