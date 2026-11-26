@@ -201,7 +201,11 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "status",
       {
         title: "Status",
-        description: "Keys, kie balance, catalog age, today's spend against the daily cap, and jobs not yet settled. Free.",
+        description:
+          "Report Shard's state before any spending: which provider API keys are set and each provider's live credit balance (fetched from the provider, the only network call), " +
+          "how old the local price catalog is (stale after 30 days, when prices may be out of date), today's spend against the daily cap, and jobs not yet settled. " +
+          "Call it first in a session, and again after a timeout or lost result before resubmitting, since an unsettled job may already exist. " +
+          "For one job's price use estimate; for a past run use get_run. Free.",
         inputSchema: {},
         outputSchema: {
           providers: z.array(
@@ -238,8 +242,14 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "list_models",
       {
         title: "List models",
-        description: "Models with durations, aspect ratios, reference roles, price per route and whether each route is verified. Free.",
-        inputSchema: { capability: z.enum(["video", "image", "audio"]).optional() },
+        description:
+          "List the generation models Shard can use, with each model's durations, aspect ratios, resolutions, reference roles and native audio, " +
+          "and for every provider route its price and whether it is verified and usable. " +
+          "Use it to choose a model and valid options before estimate, generate_image or generate_video. " +
+          "For a recommendation for one planned shot use suggest_model; for ready-made styles use list_presets or list_looks. Free; reads the local catalog.",
+        inputSchema: {
+          capability: z.enum(["video", "image", "audio"]).optional().describe("Only models of this kind. Omit to list every model."),
+        },
         outputSchema: {
           models: z.array(
             z.object({
@@ -276,7 +286,11 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "list_presets",
       {
         title: "List presets",
-        description: "Gallery presets: default duration and aspect ratio, the model each runs on, native or adaptation, and the source prompt and guide to adapt from. Free.",
+        description:
+          "List the gallery presets, ready-made ad styles, each with its default duration and aspect ratio, the model it runs on, " +
+          "whether that model is the original (native) or an adaptation, and the source prompt and guide to adapt from. " +
+          "Use it when the user wants a proven style to start from: a preset's template replaces your prompt, " +
+          "while a look from list_looks only adds a style line to your own prompt; list_models lists the raw models. Free; returns every preset.",
         inputSchema: {},
         outputSchema: {
           presets: z.array(
@@ -329,16 +343,19 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "estimate",
       {
         title: "Estimate",
-        description: "Cost of a planned job and whether the per-job budget and today's cap allow it. Reserves nothing, calls no provider. Free.",
+        description:
+          "Price a generation job before spending: the estimated cost on its route, and whether it fits the per-job budget, the per-job limit and today's remaining daily cap, with the problems that would stop it. " +
+          "Call it with the same arguments you would pass to generate_image or generate_video, to check a job or compare options before asking the user to approve the spend. " +
+          "It reserves nothing and calls no provider; status shows the day's totals. Free.",
         inputSchema: {
-          model: z.string(),
-          duration_s: z.number().int().positive().optional(),
-          resolution: z.string().optional(),
-          aspect_ratio: z.string().optional(),
-          refs: z.array(Ref).optional(),
-          params: z.record(z.string(), z.unknown()).optional(),
-          budget_usd: z.number().positive().optional(),
-          provider: z.string().optional(),
+          model: z.string().describe("A model id from list_models, such as seedance-2-5."),
+          duration_s: z.number().int().positive().optional().describe("Video length in seconds: one of the model's durationsS."),
+          resolution: z.string().optional().describe("Output resolution, such as 480p or 1080p: one of the model's resolutions."),
+          aspect_ratio: z.string().optional().describe("Frame shape, such as 16:9 or 9:16: one of the model's aspectRatios."),
+          refs: z.array(Ref).optional().describe("The reference images or clips the job would send, as passed to generate_*."),
+          params: z.record(z.string(), z.unknown()).optional().describe("Extra model parameters, passed as they would be to generate_*."),
+          budget_usd: z.number().positive().optional().describe("Your ceiling for this one job in USD. Omit to use the catalog's default budget for the model's kind."),
+          provider: z.string().optional().describe("Price this provider's route (a provider from list_models routes). Omit for the route generating would use."),
         },
         outputSchema: {
           model: z.string(),
@@ -384,7 +401,10 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "list_runs",
       {
         title: "List runs",
-        description: "Run folders, newest first, with file and take counts. Free.",
+        description:
+          "List every run folder in runs/ (each generation or film has one), newest first, with its last change time and file and take counts. " +
+          "Use it to find a run's slug, then get_run for one run's prompt, jobs and cost, get_shots for a film's storyboard, or list_scenes for its scenes. " +
+          "Returns all runs; reads the local folder only. Free.",
         inputSchema: {},
         outputSchema: {
           runs: z.array(z.object({ run: z.string(), modified: z.string(), files: z.number(), takes: z.number() })),
@@ -401,8 +421,11 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "get_run",
       {
         title: "Get run",
-        description: "One run: prompt, settings, takes, job records, cost and review notes. Free.",
-        inputSchema: { run: z.string() },
+        description:
+          "Read one run folder: its prompt (cut at 20,000 characters), settings, files, takes, job records, cost and review notes. " +
+          "Use it to see what a past generation made and what it cost; find slugs with list_runs, and use get_shots instead for a film's storyboard. " +
+          "An unknown slug fails with error 3 and names recent runs. Free; reads only.",
+        inputSchema: { run: z.string().describe("A run folder slug, as listed by list_runs (such as my-film).") },
         outputSchema: {
           run: z.string(),
           prompt: z.string().nullable(),
@@ -454,7 +477,11 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "list_assets",
       {
         title: "List assets",
-        description: "Saved references: names, kinds, descriptions, image counts. Free.",
+        description:
+          "List the Library: every saved character, product, location and style reference, with its kind, description, image count, " +
+          "and whether it has a reference sheet or a voice. " +
+          "Use it to find an asset's name before passing it as refs [{ source: name, role }], and get_asset to see one asset's images. " +
+          "Returns all assets; reads the local Library only. Free.",
         inputSchema: {},
         outputSchema: {
           assets: z.array(
@@ -484,8 +511,11 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "get_asset",
       {
         title: "Get asset",
-        description: "One asset with its images shown, numbered #1..#n as used in refs (zed#2). Free.",
-        inputSchema: { name: z.string() },
+        description:
+          "Show one Library asset: its kind and description, and every image as a preview numbered #1..#n. " +
+          "In refs, the bare name (zed) sends the asset and name#n (zed#2) sends just that image. " +
+          "Find names with list_assets; an unknown name fails with error 3 and lists the saved ones. Free; reads only.",
+        inputSchema: { name: z.string().describe("The asset's saved name, without a #n suffix (such as zed).") },
         outputSchema: Asset,
         annotations: LOOK,
       },
@@ -832,7 +862,11 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "probe",
       {
         title: "Probe",
-        description: "Duration, size, frame rate, codecs and loudness of a media file. Free, local.",
+        description:
+          "Measure a video or audio file with ffprobe: duration, width and height, frame rate, video and audio codecs, file size, " +
+          "and for files with sound their loudness (LUFS and true peak). " +
+          "Use it to check a take or film before assemble, caption or variants, for example its length or whether it has audio. " +
+          "Needs ffmpeg; a missing or unreadable file, or one outside runs/, library/ and the allowed folders, is refused. Free; local, changes nothing.",
         inputSchema: { run: Run, file: InRun("The file") },
         outputSchema: {
           path: z.string(),
@@ -874,20 +908,28 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "assemble",
       {
         title: "Assemble",
-        description: "Join shots, with optional music, voice-over and crossfades, into one film in the run folder, loudness-normalised. Free, local.",
+        description:
+          "Join video files into one film with ffmpeg, in the order given, with optional music, voice-over and crossfades, fitted to one aspect ratio and loudness-normalised. " +
+          "Use it to cut your own list of files; for a planned film use cut_film, which follows the plan and its reviews. " +
+          "Writes film.mp4 (film-2.mp4 and so on if taken) and assembly.json into the run, never overwriting; a named out that exists is refused. " +
+          "Blocks until done, which can take a minute for a long film. Needs ffmpeg. Free; local.",
         inputSchema: {
           run: Run,
-          shots: z.array(InRun("A shot")).min(1),
+          shots: z.array(InRun("A shot")).min(1).describe("The clips to join, in playing order."),
           music: InRun("Music").optional(),
           vo: InRun("Voice-over").optional(),
           transition: z
             .object({
               kind: z.string().regex(/^[a-z0-9]+$/).default("fade").describe("An ffmpeg xfade name: fade, wipeleft, circleopen..."),
-              seconds: z.number().positive(),
+              seconds: z.number().positive().describe("Crossfade length in seconds."),
             })
-            .optional(),
-          aspect_ratio: Ratio.optional(),
-          shot_audio: z.enum(["auto", "keep", "drop"]).optional(),
+            .optional()
+            .describe("A crossfade between every pair of shots. Omit for straight cuts."),
+          aspect_ratio: Ratio.optional().describe("The film's frame; shots are fitted to it. Default 16:9."),
+          shot_audio: z
+            .enum(["auto", "keep", "drop"])
+            .optional()
+            .describe("The shots' own sound. auto (default) keeps it only when there is no music or voice-over; keep always keeps it; drop silences it."),
           out: z.string().optional().describe("A plain file name; defaults to film.mp4, numbered if taken."),
         },
         outputSchema: { out: z.string(), totalS: z.number(), width: z.number(), height: z.number() },
@@ -942,13 +984,20 @@ export function createServer({ deps = {}, catalog = loadCatalog(), mode = proces
       "caption",
       {
         title: "Caption",
-        description: "Burn an SRT's captions into a video, written into the run folder. Free, local (needs the render package).",
+        description:
+          "Burn subtitles from an SRT file into a video, drawn with the render package, and write the result into the run folder. " +
+          "Use it after assemble or cut_film when the film needs on-screen captions; for titles and other exact text use render. " +
+          "Writes captioned.mp4 (numbered if taken) and captions.json, never overwriting; a named out that exists is refused, and so is an SRT with no readable cues. " +
+          "Needs the render package installed (npm install in render/). Free; local.",
         inputSchema: {
           run: Run,
           video: InRun("The video"),
           srt: InRun("The SRT file"),
-          style: z.enum(["social", "subtle"]).optional(),
-          out: z.string().optional(),
+          style: z
+            .enum(["social", "subtle"])
+            .optional()
+            .describe("social (default): text on a dark rounded box, for feeds. subtle: plain text with no box."),
+          out: z.string().optional().describe("A plain file name; defaults to captioned.mp4, numbered if taken."),
         },
         outputSchema: { out: z.string(), cues: z.number(), style: z.string(), warnings: z.array(z.string()) },
         annotations: LOCAL_WRITE,

@@ -78,7 +78,9 @@ export function registerMaking(tool, { catalog, ctx, deps = {}, runFile }) {
     {
       title: "Storyboard",
       description:
-        "The storyboard: each shot's still and take in use, every attempt, takes being filmed or failed, the review of the take in use, and the last cut. Free.",
+        "Get a film's storyboard: for each planned shot, the still and take in use, every attempt, takes still filming or failed, and the review of the take in use, plus the brief, the plan and the last cut. " +
+        "Use it to show the user progress and to decide what to film, review or cut next. " +
+        "For the plan alone use get_plan, for a run's raw files and costs get_run, and for Seedance scene cards list_scenes. Free; reads only.",
       inputSchema: { run },
       outputSchema: { film: z.string(), brief: Data.nullable(), plan: Data.nullable(), shots: z.array(Data), production: Data, cut: Data.nullable() },
       annotations: LOOK,
@@ -111,8 +113,11 @@ export function registerMaking(tool, { catalog, ctx, deps = {}, runFile }) {
     "adopt_sheet",
     {
       title: "Adopt a reference sheet",
-      description: "Make a finished sheet its asset's first image, keeping up to three earlier images after it (the old version is kept in history). Free.",
-      inputSchema: { job_id: z.string() },
+      description:
+        "Make a finished reference sheet the first image of the Library asset it was made for, keeping up to three of the asset's earlier images after it; the previous version stays in the asset's history. " +
+        "Call it after make_sheet and wait_job, once the user has seen the sheet and wants it. To keep a scene version use choose_version instead. " +
+        "Refused if the job is not a sheet or has not finished. Free; changes the local Library only.",
+      inputSchema: { job_id: z.string().describe("The local job id make_sheet returned and wait_job finished.") },
       outputSchema: { name: z.string(), images: z.array(z.string()) },
       annotations: LOCAL_WRITE,
     },

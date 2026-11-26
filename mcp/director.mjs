@@ -225,8 +225,11 @@ export function registerDirector(tool, { catalog, ctx }) {
     {
       title: "Suggest model",
       description:
-        "The model to film one saved shot on, from Alex's ratings for its job, with the reason, the price and every rated model ruled out and why; plus the image model for its still. Free.",
-      inputSchema: { run, shot: z.string() },
+        "Recommend the video model to film one shot of a saved plan, from Alex's ratings for the shot's job: the pick, its tier and why, the generated length and estimated price, " +
+        "every rated model ruled out and why, and the image model for the shot's still. " +
+        "Use it shot by shot when choosing or explaining models; list_models shows the whole catalog and estimate prices any other option. " +
+        "Needs a saved plan (save_plan); an unknown shot fails with error 3 and names the plan's shots. Free; reads only.",
+      inputSchema: { run, shot: z.string().describe("A shot id from the saved plan, such as s1.") },
       outputSchema: {
         shot: z.string(),
         model: z.string().nullable(),
