@@ -4,9 +4,11 @@ updates:
     directories: ["/mcp", "/web", "/render"]
     schedule:
       interval: weekly
+    # Minor and patch updates share one PR; each major update gets its own PR.
     groups:
       npm:
         patterns: ["*"]
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
